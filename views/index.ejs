@@ -16,36 +16,34 @@
     .file-card {
       position: relative;
     }
+    .file-checkbox {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      z-index: 10;
+      transform: scale(1.2);
+    }
     .meta-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
       border: none;
       background: transparent;
       font-size: 1.2rem;
       color: #333;
     }
-    .list .file-card {
-      display: flex;
-      align-items: center;
-      height: auto;
-    }
-    .list .file-thumb {
-      width: 100px;
-      aspect-ratio: unset;
-      height: 100px;
-      margin-right: 15px;
-    }
     .btn-group-float {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      z-index: 5;
-      display: flex;
-      gap: 5px;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
     }
   </style>
 </head>
 <body class="bg-light p-3">
   <div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>📂 My Files</h3>
       <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
@@ -59,7 +57,9 @@
     </form>
 
     <!-- Controls -->
-    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <!-- Controls Row -->
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
       <input id="search" class="form-control w-auto" placeholder="Search..." />
       <select id="filter" class="form-select w-auto">
         <option value="all">All</option>
@@ -78,78 +78,99 @@
         <i class="bi bi-list"></i>
       </button>
     </div>
-
-    <!-- Files -->
-    <div id="fileContainer" class="row grid">
-      <% files.forEach(file => {
-        const ext = file.ext.replace('.', '');
-        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-        const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
-        const isPdf = ext === 'pdf';
-      %>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-4 file-item"
-             data-name="<%= file.name.toLowerCase() %>"
-             data-ext="<%= ext %>"
-             data-date="<%= file.date.toISOString() %>"
-             data-size="<%= (file.size / 1024).toFixed(1) %> KB">
-          <div class="card file-card shadow-sm">
-            <% if (isImage) { %>
-              <img src="/uploads/<%= file.name %>" class="file-thumb" onclick="previewImageSlider('/uploads/<%= file.name %>')" />
-            <% } else if (isVideo) { %>
-              <video class="file-thumb" muted onclick="previewFile('/uploads/<%= file.name %>', 'video')">
-                <source src="/uploads/<%= file.name %>">
-              </video>
-            <% } else if (isPdf) { %>
-              <div class="text-center pt-5 text-danger file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'pdf')">
-                <i class="bi bi-file-earmark-pdf fs-1"></i><br>PDF
-              </div>
-            <% } else { %>
-              <div class="text-center pt-5 file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'download')">
-                <i class="bi bi-file-earmark fs-1"></i><br><%= ext.toUpperCase() %>
-              </div>
-            <% } %>
-
-            <!-- Buttons: meta, rename, delete -->
-            <div class="btn-group-float">
-              <button class="meta-btn" onclick="showMeta(this)" title="Info">
-                <i class="bi bi-three-dots"></i>
-              </button>
-              <button class="meta-btn" onclick="triggerRename(this)" title="Rename">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <form method="POST" action="/delete" onsubmit="return confirm('Delete this file?')">
-                <input type="hidden" name="filename" value="<%= file.name %>">
-                <button class="meta-btn text-danger" title="Delete">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      <% }) %>
+  
+    <!-- ✅ Delete Selected Button -->
+    <div id="deleteBar" class="d-none">
+      <button class="btn btn-danger px-3" type="submit" form="deleteForm">
+        <i class="bi bi-trash"></i> Delete Selected
+      </button>
     </div>
   </div>
+  
 
-  <!-- Rename Modal -->
-  <div class="modal fade" id="renameModal" tabindex="-1">
+    <!-- Delete Selected Button -->
+    <form method="POST" action="/delete-multiple" id="deleteForm">
+        <div id="deleteBar" class="btn-group-float d-none">
+          <button class="btn btn-danger shadow px-4" type="submit">
+            <i class="bi bi-trash"></i> Delete Selected
+          </button>
+        </div>
+      
+        <!-- Hidden inputs for selected files -->
+        <div id="selectedInputs"></div>
+      
+        <!-- Files -->
+        <div id="fileContainer" class="row grid">
+          <% files.forEach(file => {
+            const ext = file.ext.replace('.', '');
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+            const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
+            const isPdf = ext === 'pdf';
+          %>
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-4 file-item"
+                data-name="<%= file.name %>"
+                data-ext="<%= ext %>"
+                data-date="<%= file.date.toISOString() %>"
+                data-size="<%= (file.size / 1024).toFixed(1) %> KB">
+              <div class="card file-card shadow-sm">
+                <!-- ✅ Checkbox -->
+                <input type="checkbox" class="file-checkbox form-check-input" value="<%= file.name %>" onclick="toggleCheckbox()" style="position: absolute; top: 5px; left: 5px; z-index: 10;" />
+      
+                <% if (isImage) { %>
+                  <img src="/uploads/<%= file.name %>" class="file-thumb" onclick="previewImageSlider('/uploads/<%= file.name %>')" />
+                <% } else if (isVideo) { %>
+                  <video class="file-thumb" muted onclick="previewFile('/uploads/<%= file.name %>', 'video')">
+                    <source src="/uploads/<%= file.name %>">
+                  </video>
+                <% } else if (isPdf) { %>
+                  <div class="text-center pt-5 text-danger file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'pdf')">
+                    <i class="bi bi-file-earmark-pdf fs-1"></i><br>PDF
+                  </div>
+                <% } else { %>
+                  <div class="text-center pt-5 file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'download')">
+                    <i class="bi bi-file-earmark fs-1"></i><br><%= ext.toUpperCase() %>
+                  </div>
+                <% } %>
+      
+                <!-- Info button -->
+                <button class="meta-btn" onclick="showMeta(this)" type="button" title="Info">
+                  <i class="bi bi-three-dots"></i>
+                </button>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </form>
+      
+  </div>
+
+  <!-- Rename & Info Modal -->
+  <!-- Rename & Info Modal -->
+<div class="modal fade" id="metaModal" tabindex="-1">
     <div class="modal-dialog">
-      <form method="POST" action="/rename" class="modal-content">
+      <form method="POST" action="/rename" class="modal-content" onsubmit="return validateRename()">
         <div class="modal-header">
-          <h5 class="modal-title">Rename File</h5>
+          <h5 class="modal-title">File Info & Rename</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="hidden" name="oldName" id="oldFileName">
-          <input type="text" name="newName" id="newFileName" class="form-control" required>
+          <ul id="metaData" class="list-unstyled mb-3"></ul>
+          <hr />
+          <div class="mb-2">
+            <label for="newFileName" class="form-label">Rename file:</label>
+            <input type="hidden" name="oldName" id="oldFileName">
+            <input type="text" name="newName" id="newFileName" class="form-control" required>
+          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary">Rename</button>
+          <button class="btn btn-primary" type="submit">Rename</button>
         </div>
       </form>
     </div>
   </div>
+  
 
-  <!-- Image Slider Modal -->
+  <!-- Fullscreen Image Slider -->
   <div class="modal fade" id="imageSliderModal" tabindex="-1">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content bg-black text-white">
@@ -163,39 +184,18 @@
     </div>
   </div>
 
-  <!-- Metadata Modal -->
-  <div class="modal fade" id="metaModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content p-3">
-        <h5>📄 File Info</h5>
-        <ul id="metaData" class="list-unstyled mb-0"></ul>
-        <div class="text-end mt-3">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const files = [...document.querySelectorAll('.file-item')];
     const container = document.getElementById('fileContainer');
-    const renameModal = new bootstrap.Modal('#renameModal');
-    const metaModal = new bootstrap.Modal('#metaModal');
     const sliderModal = new bootstrap.Modal('#imageSliderModal');
+    const metaModal = new bootstrap.Modal('#metaModal');
 
-    // Slider
-    let imageList = [];
-    let currentIndex = 0;
+    let imageList = [], currentIndex = 0;
 
     function previewImageSlider(startUrl) {
-      imageList = files
-        .filter(f => ['jpg','jpeg','png','gif','webp'].includes(f.dataset.ext))
-        .map(f => '/uploads/' + f.dataset.name);
-
+      imageList = files.filter(f => ['jpg','jpeg','png','gif','webp'].includes(f.dataset.ext)).map(f => '/uploads/' + f.dataset.name);
       currentIndex = imageList.indexOf(startUrl);
-      if (currentIndex === -1) currentIndex = 0;
       showSliderImage();
       sliderModal.show();
     }
@@ -214,38 +214,34 @@
       showSliderImage();
     };
 
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', e => {
       if (!document.body.classList.contains('modal-open')) return;
       if (e.key === 'ArrowLeft') document.getElementById('prevImage').click();
       if (e.key === 'ArrowRight') document.getElementById('nextImage').click();
     });
 
-    function previewFile(url, type) {
+    function previewFile(url) {
       window.open(url, '_blank');
     }
 
     function showMeta(btn) {
-      const card = btn.closest('.file-item');
-      const name = card.dataset.name;
-      const ext = card.dataset.ext;
-      const date = new Date(card.dataset.date).toLocaleString();
-      const size = card.dataset.size;
-      document.getElementById('metaData').innerHTML = `
-        <li><strong>Name:</strong> ${name}</li>
-        <li><strong>Extension:</strong> ${ext}</li>
-        <li><strong>Created:</strong> ${date}</li>
-        <li><strong>Size:</strong> ${size}</li>
-      `;
-      metaModal.show();
-    }
+  const card = btn.closest('.file-item');
+  const name = card.dataset.name;
+  const ext = card.dataset.ext;
+  const date = new Date(card.dataset.date).toLocaleString();
+  const size = card.dataset.size;
 
-    function triggerRename(btn) {
-      const card = btn.closest('.file-item');
-      const filename = card.dataset.name;
-      document.getElementById('oldFileName').value = filename;
-      document.getElementById('newFileName').value = filename;
-      renameModal.show();
-    }
+  document.getElementById('metaData').innerHTML = `
+    <li><strong>Name:</strong> ${name}</li>
+    <li><strong>Type:</strong> ${ext}</li>
+    <li><strong>Created:</strong> ${date}</li>
+    <li><strong>Size:</strong> ${size}</li>
+  `;
+  document.getElementById('oldFileName').value = name;
+  document.getElementById('newFileName').value = name;
+  metaModal.show();
+}
+
 
     document.getElementById('search').addEventListener('input', e => {
       const q = e.target.value.toLowerCase();
@@ -272,7 +268,6 @@
         const nameB = b.dataset.name;
         const dateA = new Date(a.dataset.date);
         const dateB = new Date(b.dataset.date);
-
         if (val === 'name-asc') return nameA.localeCompare(nameB);
         if (val === 'name-desc') return nameB.localeCompare(nameA);
         if (val === 'date-asc') return dateA - dateB;
@@ -285,6 +280,44 @@
       container.classList.toggle('grid');
       container.classList.toggle('list');
     });
+
+    function toggleCheckbox() {
+  const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+  const deleteBar = document.getElementById('deleteBar');
+  const selectedInputs = document.getElementById('selectedInputs');
+
+  // Show/hide delete bar
+  deleteBar.classList.toggle('d-none', checkboxes.length === 0);
+
+  // Update hidden inputs
+  selectedInputs.innerHTML = '';
+  checkboxes.forEach(cb => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'files';
+    input.value = cb.value;
+    selectedInputs.appendChild(input);
+  });
+}
+
+function validateRename() {
+  const oldName = document.getElementById('oldFileName').value.trim();
+  const newName = document.getElementById('newFileName').value.trim();
+
+  if (!newName) {
+    alert("Please enter a new filename.");
+    return false;
+  }
+
+  if (newName === oldName) {
+    alert("New name must be different from the old name.");
+    return false;
+  }
+
+  return true;
+}
+
   </script>
+  
 </body>
 </html>

@@ -6,23 +6,26 @@ const path = require('path');
 
 const uploadPath = path.join(__dirname, '../public/uploads');
 
-// 🔐 Simple user
+// Simple hardcoded user
 const USER = {
   username: 'admin',
   password: '123456'
 };
 
-// 🔒 Auth middleware
+// Middleware to protect routes
 function requireLogin(req, res, next) {
   if (req.session.user) next();
   else res.redirect('/login');
 }
 
-// 🔑 Login routes
+// --- AUTH ROUTES ---
+
+// Login form
 router.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
+// Handle login
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === USER.username && password === USER.password) {
@@ -33,20 +36,28 @@ router.post('/login', (req, res) => {
   }
 });
 
+// Logout
 router.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
   });
 });
 
-// 📥 Multer for file uploads
+// --- FILE UPLOAD ---
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadPath),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  destination: function (req, file, cb) {
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
 });
 const upload = multer({ storage });
 
-// 🏠 View all files
+// --- MAIN ROUTES ---
+
+// Home - show all files
 router.get('/', requireLogin, (req, res) => {
   let files = [];
   if (fs.existsSync(uploadPath)) {
@@ -63,31 +74,38 @@ router.get('/', requireLogin, (req, res) => {
   res.render('index', { files });
 });
 
-// 📤 Upload files
+// Upload files
 router.post('/upload', requireLogin, upload.array('files', 20), (req, res) => {
   res.redirect('/');
 });
 
-// 🗑 Delete file
-router.post('/delete', requireLogin, (req, res) => {
-  const file = req.body.filename;
-  const filePath = path.join(uploadPath, file);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-  res.redirect('/');
-});
-
-// ✏️ Rename file
+// Rename file
 router.post('/rename', requireLogin, (req, res) => {
-  const oldName = req.body.oldName;
-  const newName = req.body.newName;
-  const oldPath = path.join(uploadPath, oldName);
-  const newPath = path.join(uploadPath, newName);
-  if (fs.existsSync(oldPath)) {
+    const { oldName, newName } = req.body;
+    const oldPath = path.join(uploadPath, oldName);
+    const newPath = path.join(uploadPath, newName);
+  
+    // Prevent deleting if newName is empty or same
+    if (!newName || !oldName || oldName === newName || !fs.existsSync(oldPath)) {
+      return res.redirect('/');
+    }
+  
     fs.renameSync(oldPath, newPath);
-  }
-  res.redirect('/');
-});
+    res.redirect('/');
+  });
 
+// Delete multiple files
+router.post('/delete-multiple', requireLogin, (req, res) => {
+    const files = Array.isArray(req.body.files) ? req.body.files : [req.body.files];
+  
+    files.forEach(filename => {
+      const filePath = path.join(uploadPath, filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  
+    res.redirect('/');
+  });
+  
 module.exports = router;
