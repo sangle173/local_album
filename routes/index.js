@@ -62,14 +62,14 @@ router.get('/', requireLogin, (req, res) => {
   let files = [];
   if (fs.existsSync(uploadPath)) {
     files = fs.readdirSync(uploadPath).map(file => {
-      const stats = fs.statSync(path.join(uploadPath, file));
-      return {
-        name: file,
-        ext: path.extname(file).toLowerCase(),
-        date: stats.mtime,
-        size: stats.size
-      };
-    });
+        const stats = fs.statSync(path.join(uploadPath, file));
+        return {
+          name: file,
+          ext: path.extname(file).toLowerCase(),
+          date: stats.mtime,
+          size: stats.size
+        };
+      }).sort((a, b) => b.date - a.date); // 👈 Sort newest first
   }
   res.render('index', { files });
 });

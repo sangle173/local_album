@@ -1,323 +1,553 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>File Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    .file-thumb {
-      object-fit: cover;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      cursor: pointer;
-    }
-    .file-card {
-      position: relative;
-    }
-    .file-checkbox {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      z-index: 10;
-      transform: scale(1.2);
-    }
-    .meta-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      border: none;
-      background: transparent;
-      font-size: 1.2rem;
-      color: #333;
-    }
-    .btn-group-float {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>File Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .file-thumb {
+            object-fit: cover;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+        }
+
+        .file-card {
+            position: relative;
+        }
+
+        .file-checkbox {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 10;
+            transform: scale(1.2);
+        }
+
+        .meta-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            border: none;
+            background: transparent;
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .btn-group-float {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+        }
+
+        .file-grid-2 .file-item {
+            width: 50%;
+        }
+
+        .file-grid-3 .file-item {
+            width: 33.33%;
+        }
+
+        .file-grid-4 .file-item {
+            width: 25%;
+        }
+
+        .file-grid-6 .file-item {
+            width: 16.66%;
+        }
+
+        @media (min-width: 576px) {
+            .file-item {
+                float: left;
+                padding: 10px;
+            }
+        }
+
+        .video-wrapper {
+            position: relative;
+        }
+
+        .video-wrapper video {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+        }
+
+        .video-wrapper .play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .video-wrapper .play-btn i {
+            color: white;
+            font-size: 1.5rem;
+        }
+    </style>
 </head>
+
 <body class="bg-light p-3">
-  <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3>📂 My Files</h3>
-      <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
-    </div>
-
-    <!-- Upload Form -->
-    <form action="/upload" method="POST" enctype="multipart/form-data" class="mb-4">
-      <div class="input-group">
-        <input type="file" name="files" multiple required class="form-control" />
-        <button class="btn btn-primary" type="submit">Upload</button>
-      </div>
-    </form>
-
-    <!-- Controls -->
-    <!-- Controls Row -->
-<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <input id="search" class="form-control w-auto" placeholder="Search..." />
-      <select id="filter" class="form-select w-auto">
-        <option value="all">All</option>
-        <option value="images">Images</option>
-        <option value="videos">Videos</option>
-        <option value="pdfs">PDFs</option>
-        <option value="others">Others</option>
-      </select>
-      <select id="sort" class="form-select w-auto">
-        <option value="date-desc">Newest</option>
-        <option value="date-asc">Oldest</option>
-        <option value="name-asc">A → Z</option>
-        <option value="name-desc">Z → A</option>
-      </select>
-      <button id="toggleView" class="btn btn-outline-secondary" type="button">
-        <i class="bi bi-list"></i>
-      </button>
-    </div>
-  
-    <!-- ✅ Delete Selected Button -->
-    <div id="deleteBar" class="d-none">
-      <button class="btn btn-danger px-3" type="submit" form="deleteForm">
-        <i class="bi bi-trash"></i> Delete Selected
-      </button>
-    </div>
-  </div>
-  
-
-    <!-- Delete Selected Button -->
-    <form method="POST" action="/delete-multiple" id="deleteForm">
-        <div id="deleteBar" class="btn-group-float d-none">
-          <button class="btn btn-danger shadow px-4" type="submit">
-            <i class="bi bi-trash"></i> Delete Selected
-          </button>
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>📂 My Files</h3>
+            <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
         </div>
-      
-        <!-- Hidden inputs for selected files -->
-        <div id="selectedInputs"></div>
-      
-        <!-- Files -->
-        <div id="fileContainer" class="row grid">
-          <% files.forEach(file => {
-            const ext = file.ext.replace('.', '');
-            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-            const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
-            const isPdf = ext === 'pdf';
-          %>
-            <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-4 file-item"
-                data-name="<%= file.name %>"
-                data-ext="<%= ext %>"
-                data-date="<%= file.date.toISOString() %>"
-                data-size="<%= (file.size / 1024).toFixed(1) %> KB">
-              <div class="card file-card shadow-sm">
-                <!-- ✅ Checkbox -->
-                <input type="checkbox" class="file-checkbox form-check-input" value="<%= file.name %>" onclick="toggleCheckbox()" style="position: absolute; top: 5px; left: 5px; z-index: 10;" />
-      
-                <% if (isImage) { %>
-                  <img src="/uploads/<%= file.name %>" class="file-thumb" onclick="previewImageSlider('/uploads/<%= file.name %>')" />
-                <% } else if (isVideo) { %>
-                  <video class="file-thumb" muted onclick="previewFile('/uploads/<%= file.name %>', 'video')">
-                    <source src="/uploads/<%= file.name %>">
-                  </video>
-                <% } else if (isPdf) { %>
-                  <div class="text-center pt-5 text-danger file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'pdf')">
-                    <i class="bi bi-file-earmark-pdf fs-1"></i><br>PDF
-                  </div>
-                <% } else { %>
-                  <div class="text-center pt-5 file-thumb" onclick="previewFile('/uploads/<%= file.name %>', 'download')">
-                    <i class="bi bi-file-earmark fs-1"></i><br><%= ext.toUpperCase() %>
-                  </div>
-                <% } %>
-      
-                <!-- Info button -->
-                <button class="meta-btn" onclick="showMeta(this)" type="button" title="Info">
-                  <i class="bi bi-three-dots"></i>
+
+        <!-- Upload Form -->
+        <form id="uploadForm" class="mb-4">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="file" id="fileInput" name="files" multiple class="d-none"
+                    onchange="previewSelectedFiles()" />
+                <button type="button" class="btn btn-primary" onclick="fileInput.click()">
+                    <i class="bi bi-cloud-upload"></i> Choose Files
                 </button>
-              </div>
+                <button type="button" class="btn btn-success" id="uploadBtn" onclick="uploadFiles()" disabled>
+                    <i class="bi bi-arrow-up-circle"></i> Upload
+                </button>
             </div>
-          <% }) %>
+            <div id="uploadPreview" class="row mt-3"></div>
+        </form>
+        <!-- Upload Overlay -->
+        <div id="uploadOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none bg-dark bg-opacity-75 z-3"
+            style="z-index: 9999;">
+            <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white">
+                <h4>Uploading...</h4>
+                <div class="progress w-75 mt-3">
+                    <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated"
+                        style="width: 0%">0%</div>
+                </div>
+            </div>
         </div>
-      </form>
-      
-  </div>
 
-  <!-- Rename & Info Modal -->
-  <!-- Rename & Info Modal -->
-<div class="modal fade" id="metaModal" tabindex="-1">
-    <div class="modal-dialog">
-      <form method="POST" action="/rename" class="modal-content" onsubmit="return validateRename()">
-        <div class="modal-header">
-          <h5 class="modal-title">File Info & Rename</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+        <!-- Controls -->
+        <!-- Controls Row -->
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <input id="search" class="form-control w-auto" placeholder="Search..." />
+                <select id="filter" class="form-select w-auto">
+                    <option value="all">All</option>
+                    <option value="images">Images</option>
+                    <option value="videos">Videos</option>
+                    <option value="pdfs">PDFs</option>
+                    <option value="others">Others</option>
+                </select>
+                <select id="sort" class="form-select w-auto">
+                    <option value="date-desc">Newest</option>
+                    <option value="date-asc">Oldest</option>
+                    <option value="name-asc">A → Z</option>
+                    <option value="name-desc">Z → A</option>
+                </select>
+                <select id="columnSelector" class="form-select w-auto">
+                    <option value="2">2 Columns</option>
+                    <option value="3">3 Columns</option>
+                    <option value="4" selected>4 Columns</option>
+                    <option value="6">6 Columns</option>
+                </select>
+                <button id="toggleView" class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+
+            <!-- ✅ Delete Selected Button -->
+            <div id="deleteBar" class="d-none">
+                <button class="btn btn-danger px-3" type="submit" form="deleteForm">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
         </div>
-        <div class="modal-body">
-          <ul id="metaData" class="list-unstyled mb-3"></ul>
-          <hr />
-          <div class="mb-2">
-            <label for="newFileName" class="form-label">Rename file:</label>
-            <input type="hidden" name="oldName" id="oldFileName">
-            <input type="text" name="newName" id="newFileName" class="form-control" required>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" type="submit">Rename</button>
-        </div>
-      </form>
+
+
+        <!-- Delete Selected Button -->
+        <form method="POST" action="/delete-multiple" id="deleteForm">
+            <div id="deleteBar" class="btn-group-float d-none">
+                <button class="btn btn-danger shadow px-4" type="submit">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
+
+            <!-- Hidden inputs for selected files -->
+            <div id="selectedInputs"></div>
+
+            <!-- Files -->
+            <div id="fileContainer" class="row grid">
+                <% files.forEach(file=> {
+                    const ext = file.ext.replace('.', '');
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                    const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
+                    const isPdf = ext === 'pdf';
+                    %>
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-4 file-item" data-name="<%= file.name %>"
+                        data-ext="<%= ext %>" data-date="<%= file.date.toISOString() %>"
+                        data-size="<%= (file.size / 1024).toFixed(1) %> KB">
+                        <div class="card file-card shadow-sm">
+                            <!-- ✅ Checkbox -->
+                            <input type="checkbox" class="file-checkbox form-check-input" value="<%= file.name %>"
+                                onclick="toggleCheckbox()"
+                                style="position: absolute; top: 5px; left: 5px; z-index: 10;" />
+
+                            <% if (isImage) { %>
+                                <img src="/uploads/<%= file.name %>" class="file-thumb"
+                                    onclick="previewImageSlider('/uploads/<%= file.name %>')" />
+                                <% } else if (isVideo) { %>
+                                    <div class="video-wrapper position-relative"
+                                        onclick="previewFile('/uploads/<%= file.name %>', 'video')">
+                                        <video muted onloadedmetadata="setDuration(this)">
+                                            <source src="/uploads/<%= file.name %>">
+                                        </video>
+                                        <div class="play-btn"><i class="bi bi-play-fill"></i></div>
+                                        <div class="video-duration badge bg-dark text-white position-absolute bottom-0 end-0 m-1 small px-2 py-1"
+                                            style="opacity: 0.8;">--:--</div>
+                                    </div>
+
+
+                                    <% } else if (isPdf) { %>
+                                        <div class="text-center pt-5 text-danger file-thumb"
+                                            onclick="previewFile('/uploads/<%= file.name %>', 'pdf')">
+                                            <i class="bi bi-file-earmark-pdf fs-1"></i><br>PDF
+                                        </div>
+                                        <% } else { %>
+                                            <div class="text-center pt-5 file-thumb"
+                                                onclick="previewFile('/uploads/<%= file.name %>', 'download')">
+                                                <i class="bi bi-file-earmark fs-1"></i><br>
+                                                <%= ext.toUpperCase() %>
+                                            </div>
+                                            <% } %>
+
+                                                <!-- Info button -->
+                                                <button class="meta-btn" onclick="showMeta(this)" type="button"
+                                                    title="Info">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                        </div>
+                    </div>
+                    <% }) %>
+            </div>
+        </form>
+
     </div>
-  </div>
-  
 
-  <!-- Fullscreen Image Slider -->
-  <div class="modal fade" id="imageSliderModal" tabindex="-1">
-    <div class="modal-dialog modal-fullscreen">
-      <div class="modal-content bg-black text-white">
-        <div class="modal-body text-center position-relative p-0">
-          <img id="sliderImage" class="img-fluid w-100 h-100" style="object-fit: contain;" />
-          <button id="prevImage" class="btn btn-dark position-absolute top-50 start-0 translate-middle-y"><i class="bi bi-chevron-left"></i></button>
-          <button id="nextImage" class="btn btn-dark position-absolute top-50 end-0 translate-middle-y"><i class="bi bi-chevron-right"></i></button>
-          <button class="btn btn-light position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+    <!-- Rename & Info Modal -->
+    <!-- Rename & Info Modal -->
+    <div class="modal fade" id="metaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="POST" action="/rename" class="modal-content" onsubmit="return validateRename()">
+                <div class="modal-header">
+                    <h5 class="modal-title">File Info & Rename</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="metaData" class="list-unstyled mb-3"></ul>
+                    <hr />
+                    <div class="mb-2">
+                        <label for="newFileName" class="form-label">Rename file:</label>
+                        <input type="hidden" name="oldName" id="oldFileName">
+                        <input type="text" name="newName" id="newFileName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="submit">Rename</button>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    const files = [...document.querySelectorAll('.file-item')];
-    const container = document.getElementById('fileContainer');
-    const sliderModal = new bootstrap.Modal('#imageSliderModal');
-    const metaModal = new bootstrap.Modal('#metaModal');
 
-    let imageList = [], currentIndex = 0;
+    <!-- Fullscreen Image Slider -->
+    <div class="modal fade" id="imageSliderModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content bg-black text-white">
+                <div class="modal-body text-center position-relative p-0">
+                    <img id="sliderImage" class="img-fluid w-100 h-100" style="object-fit: contain;" />
+                    <button id="prevImage" class="btn btn-dark position-absolute top-50 start-0 translate-middle-y"><i
+                            class="bi bi-chevron-left"></i></button>
+                    <button id="nextImage" class="btn btn-dark position-absolute top-50 end-0 translate-middle-y"><i
+                            class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-light position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function previewImageSlider(startUrl) {
-      imageList = files.filter(f => ['jpg','jpeg','png','gif','webp'].includes(f.dataset.ext)).map(f => '/uploads/' + f.dataset.name);
-      currentIndex = imageList.indexOf(startUrl);
-      showSliderImage();
-      sliderModal.show();
-    }
+    <!-- Video Preview Modal -->
+    <div class="modal fade" id="videoModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content bg-black">
+                <div class="modal-body position-relative p-0">
+                    <video id="videoPlayer" class="w-100 h-100" controls style="object-fit: contain;"></video>
+                    <button class="btn btn-light position-absolute top-0 end-0 m-3" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function showSliderImage() {
-      document.getElementById('sliderImage').src = imageList[currentIndex];
-    }
 
-    document.getElementById('prevImage').onclick = () => {
-      currentIndex = (currentIndex - 1 + imageList.length) % imageList.length;
-      showSliderImage();
-    };
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const files = [...document.querySelectorAll('.file-item')];
+        const container = document.getElementById('fileContainer');
+        const sliderModal = new bootstrap.Modal('#imageSliderModal');
+        const metaModal = new bootstrap.Modal('#metaModal');
 
-    document.getElementById('nextImage').onclick = () => {
-      currentIndex = (currentIndex + 1) % imageList.length;
-      showSliderImage();
-    };
+        let imageList = [], currentIndex = 0;
 
-    document.addEventListener('keydown', e => {
-      if (!document.body.classList.contains('modal-open')) return;
-      if (e.key === 'ArrowLeft') document.getElementById('prevImage').click();
-      if (e.key === 'ArrowRight') document.getElementById('nextImage').click();
-    });
+        function previewImageSlider(startUrl) {
+            imageList = files.filter(f => ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(f.dataset.ext)).map(f => '/uploads/' + f.dataset.name);
+            currentIndex = imageList.indexOf(startUrl);
+            showSliderImage();
+            sliderModal.show();
+        }
 
-    function previewFile(url) {
-      window.open(url, '_blank');
-    }
+        function showSliderImage() {
+            document.getElementById('sliderImage').src = imageList[currentIndex];
+        }
 
-    function showMeta(btn) {
-  const card = btn.closest('.file-item');
-  const name = card.dataset.name;
-  const ext = card.dataset.ext;
-  const date = new Date(card.dataset.date).toLocaleString();
-  const size = card.dataset.size;
+        document.getElementById('prevImage').onclick = () => {
+            currentIndex = (currentIndex - 1 + imageList.length) % imageList.length;
+            showSliderImage();
+        };
 
-  document.getElementById('metaData').innerHTML = `
+        document.getElementById('nextImage').onclick = () => {
+            currentIndex = (currentIndex + 1) % imageList.length;
+            showSliderImage();
+        };
+
+        document.addEventListener('keydown', e => {
+            if (!document.body.classList.contains('modal-open')) return;
+            if (e.key === 'ArrowLeft') document.getElementById('prevImage').click();
+            if (e.key === 'ArrowRight') document.getElementById('nextImage').click();
+        });
+
+        function previewFile(url) {
+            window.open(url, '_blank');
+        }
+
+        function showMeta(btn) {
+            const card = btn.closest('.file-item');
+            const name = card.dataset.name;
+            const ext = card.dataset.ext;
+            const date = new Date(card.dataset.date).toLocaleString();
+            const size = card.dataset.size;
+
+            document.getElementById('metaData').innerHTML = `
     <li><strong>Name:</strong> ${name}</li>
     <li><strong>Type:</strong> ${ext}</li>
     <li><strong>Created:</strong> ${date}</li>
     <li><strong>Size:</strong> ${size}</li>
   `;
-  document.getElementById('oldFileName').value = name;
-  document.getElementById('newFileName').value = name;
-  metaModal.show();
-}
+            document.getElementById('oldFileName').value = name;
+            document.getElementById('newFileName').value = name;
+            metaModal.show();
+        }
 
 
-    document.getElementById('search').addEventListener('input', e => {
-      const q = e.target.value.toLowerCase();
-      files.forEach(f => f.style.display = f.dataset.name.includes(q) ? '' : 'none');
-    });
+        document.getElementById('search').addEventListener('input', e => {
+            const q = e.target.value.toLowerCase();
+            files.forEach(f => f.style.display = f.dataset.name.includes(q) ? '' : 'none');
+        });
 
-    document.getElementById('filter').addEventListener('change', e => {
-      const val = e.target.value;
-      files.forEach(f => {
-        const ext = f.dataset.ext;
-        let show = true;
-        if (val === 'images') show = ['jpg','jpeg','png','gif','webp'].includes(ext);
-        else if (val === 'videos') show = ['mp4','webm','mov'].includes(ext);
-        else if (val === 'pdfs') show = ext === 'pdf';
-        else if (val === 'others') show = !['jpg','jpeg','png','gif','webp','mp4','webm','mov','pdf'].includes(ext);
-        f.style.display = show ? '' : 'none';
-      });
-    });
+        document.getElementById('filter').addEventListener('change', e => {
+            const val = e.target.value;
+            files.forEach(f => {
+                const ext = f.dataset.ext;
+                let show = true;
+                if (val === 'images') show = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                else if (val === 'videos') show = ['mp4', 'webm', 'mov'].includes(ext);
+                else if (val === 'pdfs') show = ext === 'pdf';
+                else if (val === 'others') show = !['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov', 'pdf'].includes(ext);
+                f.style.display = show ? '' : 'none';
+            });
+        });
 
-    document.getElementById('sort').addEventListener('change', e => {
-      const val = e.target.value;
-      const sorted = [...files].sort((a, b) => {
-        const nameA = a.dataset.name;
-        const nameB = b.dataset.name;
-        const dateA = new Date(a.dataset.date);
-        const dateB = new Date(b.dataset.date);
-        if (val === 'name-asc') return nameA.localeCompare(nameB);
-        if (val === 'name-desc') return nameB.localeCompare(nameA);
-        if (val === 'date-asc') return dateA - dateB;
-        if (val === 'date-desc') return dateB - dateA;
-      });
-      sorted.forEach(el => container.appendChild(el));
-    });
+        document.getElementById('sort').addEventListener('change', e => {
+            const val = e.target.value;
+            const sorted = [...files].sort((a, b) => {
+                const nameA = a.dataset.name;
+                const nameB = b.dataset.name;
+                const dateA = new Date(a.dataset.date);
+                const dateB = new Date(b.dataset.date);
+                if (val === 'name-asc') return nameA.localeCompare(nameB);
+                if (val === 'name-desc') return nameB.localeCompare(nameA);
+                if (val === 'date-asc') return dateA - dateB;
+                if (val === 'date-desc') return dateB - dateA;
+            });
+            sorted.forEach(el => container.appendChild(el));
+        });
 
-    document.getElementById('toggleView').addEventListener('click', () => {
-      container.classList.toggle('grid');
-      container.classList.toggle('list');
-    });
+        document.getElementById('toggleView').addEventListener('click', () => {
+            container.classList.toggle('grid');
+            container.classList.toggle('list');
+        });
 
-    function toggleCheckbox() {
-  const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-  const deleteBar = document.getElementById('deleteBar');
-  const selectedInputs = document.getElementById('selectedInputs');
+        function toggleCheckbox() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            const deleteBar = document.getElementById('deleteBar');
+            const selectedInputs = document.getElementById('selectedInputs');
 
-  // Show/hide delete bar
-  deleteBar.classList.toggle('d-none', checkboxes.length === 0);
+            // Show/hide delete bar
+            deleteBar.classList.toggle('d-none', checkboxes.length === 0);
 
-  // Update hidden inputs
-  selectedInputs.innerHTML = '';
-  checkboxes.forEach(cb => {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'files';
-    input.value = cb.value;
-    selectedInputs.appendChild(input);
-  });
-}
+            // Update hidden inputs
+            selectedInputs.innerHTML = '';
+            checkboxes.forEach(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'files';
+                input.value = cb.value;
+                selectedInputs.appendChild(input);
+            });
+        }
 
-function validateRename() {
-  const oldName = document.getElementById('oldFileName').value.trim();
-  const newName = document.getElementById('newFileName').value.trim();
+        function validateRename() {
+            const oldName = document.getElementById('oldFileName').value.trim();
+            const newName = document.getElementById('newFileName').value.trim();
 
-  if (!newName) {
-    alert("Please enter a new filename.");
-    return false;
-  }
+            if (!newName) {
+                alert("Please enter a new filename.");
+                return false;
+            }
 
-  if (newName === oldName) {
-    alert("New name must be different from the old name.");
-    return false;
-  }
+            if (newName === oldName) {
+                alert("New name must be different from the old name.");
+                return false;
+            }
 
-  return true;
-}
+            return true;
+        }
+        function updateFileLabel() {
+            const input = document.getElementById('fileInput');
+            const label = document.getElementById('fileLabel');
+            if (input.files.length > 0) {
+                const names = [...input.files].map(f => f.name).join(', ');
+                label.textContent = `${input.files.length} file(s) selected`;
+            } else {
+                label.textContent = '';
+            }
+        }
+        function previewSelectedFiles() {
+            const input = document.getElementById('fileInput');
+            const preview = document.getElementById('uploadPreview');
+            const uploadBtn = document.getElementById('uploadBtn');
+            preview.innerHTML = '';
 
-  </script>
-  
+            if (!input.files || input.files.length === 0) {
+                uploadBtn.disabled = true;
+                return;
+            }
+
+            uploadBtn.disabled = false;
+
+            [...input.files].forEach(file => {
+                const col = document.createElement('div');
+                col.className = 'col-4 col-sm-3 col-md-2 mb-2';
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
+
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    if (isImage) {
+                        col.innerHTML = `<img src="${e.target.result}" class="img-fluid rounded shadow-sm" title="${file.name}" />`;
+                    } else if (isVideo) {
+                        col.innerHTML = `<video src="${e.target.result}" class="img-fluid rounded shadow-sm" muted></video>`;
+                    } else {
+                        col.innerHTML = `<div class="border rounded p-2 text-center small bg-light">${file.name}</div>`;
+                    }
+                    preview.appendChild(col);
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function uploadFiles() {
+            const input = document.getElementById('fileInput');
+            const files = input.files;
+            if (!files.length) return alert("Please choose files to upload.");
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload');
+
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    const bar = document.getElementById('uploadProgress');
+                    bar.style.width = percent + '%';
+                    bar.textContent = percent + '%';
+                }
+            };
+
+            xhr.onloadstart = () => {
+                document.getElementById('uploadOverlay').classList.remove('d-none');
+            };
+
+            xhr.onloadend = () => {
+                window.location.reload(); // Reload to show new files
+            };
+
+            xhr.send(formData);
+        }
+
+        document.getElementById('columnSelector').addEventListener('change', e => {
+            const container = document.getElementById('fileContainer');
+            container.classList.remove('file-grid-2', 'file-grid-3', 'file-grid-4', 'file-grid-6');
+            container.classList.add('file-grid-' + e.target.value);
+        });
+        const videoModal = new bootstrap.Modal('#videoModal');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        function previewFile(url, type) {
+            if (type === 'video') {
+                videoPlayer.src = url;
+                videoPlayer.load();
+                videoModal.show();
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+        document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
+        });
+        
+        function setDuration(video) {
+            const badge = video.closest('.video-wrapper').querySelector('.video-duration');
+            const seconds = Math.floor(video.duration);
+            if (!isNaN(seconds)) {
+                const minutes = Math.floor(seconds / 60);
+                const sec = String(seconds % 60).padStart(2, '0');
+                badge.textContent = `${minutes}:${sec}`;
+            } else {
+                badge.textContent = '--:--';
+            }
+        }
+
+    </script>
+
 </body>
+
 </html>
